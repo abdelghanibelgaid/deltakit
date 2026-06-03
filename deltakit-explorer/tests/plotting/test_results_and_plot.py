@@ -6,6 +6,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
+from deltakit_explorer.plotting._lambda import plot_lambda
+from deltakit_explorer.plotting._leppr import (
+    plot_logical_error_probability_per_round,
+)
 from deltakit_explorer.plotting.plotting import plot
 from deltakit_explorer.plotting.results import (
     LambdaResult,
@@ -95,6 +99,28 @@ class TestPlot:
         assert ax.get_xlabel() == "Code distance"
         plt.close(fig)
 
+    def test_plot_dispatches_lambda_result_to_plot_lambda(
+        self, lambda_results, monkeypatch
+    ):
+        lambda_result = interpolate_lambda(lambda_results)
+        fig, ax = plt.subplots()
+
+        def fake_plot_lambda(result, *, fig=None, ax=None, title=None):
+            assert result is lambda_result
+            assert title == "Custom title"
+            return fig, ax
+
+        monkeypatch.setattr(
+            "deltakit_explorer.plotting.plotting.plot_lambda", fake_plot_lambda
+        )
+
+        returned_fig, returned_ax = plot(
+            lambda_result, fig=fig, ax=ax, title="Custom title"
+        )
+        assert returned_fig is fig
+        assert returned_ax is ax
+        plt.close(fig)
+
     def test_plot_with_leppr_result(self, leppr_results):
         leppr_result = interpolate_leppr(leppr_results)
         fig, ax = plot(leppr_result)
@@ -102,6 +128,32 @@ class TestPlot:
         assert ax is not None
         assert ax.get_title() == "Logical Error Probability per Round"
         assert ax.get_xlabel() == "Rounds"
+        plt.close(fig)
+
+    def test_plot_dispatches_leppr_result_to_plot_leppr(
+        self, leppr_results, monkeypatch
+    ):
+        leppr_result = interpolate_leppr(leppr_results)
+        fig, ax = plt.subplots()
+
+        def fake_plot_logical_error_probability_per_round(
+            result, *, fig=None, ax=None, title=None
+        ):
+            assert result is leppr_result
+            assert title == "Custom title"
+            return fig, ax
+
+        monkeypatch.setattr(
+            "deltakit_explorer.plotting.plotting."
+            "plot_logical_error_probability_per_round",
+            fake_plot_logical_error_probability_per_round,
+        )
+
+        returned_fig, returned_ax = plot(
+            leppr_result, fig=fig, ax=ax, title="Custom title"
+        )
+        assert returned_fig is fig
+        assert returned_ax is ax
         plt.close(fig)
 
     def test_plot_with_existing_fig_ax(self, lambda_results):
@@ -122,3 +174,47 @@ class TestPlot:
     def test_plot_raises_on_unsupported_type(self):
         with pytest.raises(TypeError, match="Unsupported result type"):
             plot("invalid")
+
+
+class TestSpecialisedPlotters:
+    def test_plot_lambda_accepts_interpolated_result(self, lambda_results):
+        lambda_result = interpolate_lambda(lambda_results)
+        fig, ax = plot_lambda(lambda_result)
+        assert fig is not None
+        assert ax.get_title() == "Error Suppression Factor Λ"
+        assert ax.get_xlabel() == "Code distance"
+        plt.close(fig)
+
+    def test_plot_lambda_accepts_raw_lambda_data(self, lambda_results):
+        fig, ax = plot_lambda(lambda_results, num_points=50)
+        assert fig is not None
+        assert ax.get_title() == "Error Suppression Factor Λ"
+        assert len(ax.lines) >= 1
+        plt.close(fig)
+
+    def test_plot_leppr_accepts_interpolated_result(self, leppr_results):
+        leppr_result = interpolate_leppr(leppr_results)
+        fig, ax = plot_logical_error_probability_per_round(leppr_result)
+        assert fig is not None
+        assert ax.get_title() == "Logical Error Probability per Round"
+        assert ax.get_xlabel() == "Rounds"
+        plt.close(fig)
+
+    def test_plot_leppr_accepts_raw_leppr_data(self, leppr_results, num_rounds):
+        logical_error_probability = np.array([0.01, 0.02, 0.03])
+        logical_error_probability_stddev = np.array([0.001, 0.002, 0.003])
+        fig, ax = plot_logical_error_probability_per_round(
+            leppr_results,
+            num_rounds=num_rounds,
+            logical_error_probability=logical_error_probability,
+            logical_error_probability_stddev=logical_error_probability_stddev,
+            num_points=50,
+        )
+        assert fig is not None
+        assert ax.get_title() == "Logical Error Probability per Round"
+        assert len(ax.lines) >= 1
+        plt.close(fig)
+
+    def test_plot_leppr_requires_observations_for_raw_data(self, leppr_results):
+        with pytest.raises(ValueError, match="are required"):
+            plot_logical_error_probability_per_round(leppr_results)
