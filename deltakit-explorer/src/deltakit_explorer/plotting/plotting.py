@@ -10,18 +10,11 @@ from deltakit_explorer.analysis import LambdaData
 from deltakit_explorer.analysis import LogicalErrorProbabilityPerRoundData as LEPPRData
 from deltakit_explorer.plotting._lambda import plot_lambda
 from deltakit_explorer.plotting._leppr import plot_leppr
-from deltakit_explorer.plotting.results import (
-    LambdaResult,
-    interpolate_lambda,
-    interpolate_leppr,
-)
-from deltakit_explorer.plotting.results import (
-    LogicalErrorProbabilityPerRoundResult as LEPPRResult,
-)
+from deltakit_explorer.plotting.results import interpolate_lambda, interpolate_leppr
 
 
 def plot(
-    result: LambdaData | LambdaResult | LEPPRData | LEPPRResult,
+    result: LambdaData | LEPPRData,
     *,
     num_sigmas: int = 3,
     num_points: int = 200,
@@ -29,18 +22,16 @@ def plot(
     ax: Axes | None = None,
     title: str | None = None,
 ) -> tuple[Figure, Axes]:
-    """Prepare plot data and dispatch to the specialised plotter.
+    """Interpolate raw analysis data and dispatch to the specialised plotter.
 
-    This high-level plotting function accepts either raw analysis data or an
-    already-interpolated plotting result. Raw analysis data is interpolated here
-    before being dispatched to the specialised renderer for its result type.
+    This high-level plotting function accepts raw analysis data, prepares the
+    ready-to-plot interpolated result, and dispatches that result to the
+    specialised renderer for its type.
 
     Args:
-        result: Raw analysis data or precomputed plot data.
-        num_sigmas: Number of standard deviations for the error band when
-            interpolation is required. Default 3.
-        num_points: Number of interpolation points when interpolation is
-            required. Default 200.
+        result: Raw Lambda or logical error probability per round data.
+        num_sigmas: Number of standard deviations for the error band. Default 3.
+        num_points: Number of interpolation points. Default 200.
         fig: An existing matplotlib Figure. If None, a new figure will be
             created by the specialised plotting function. Default is None.
         ax: An existing matplotlib Axes. If None, a new axes will be created by
@@ -60,23 +51,9 @@ def plot(
 
             fig, ax = plot(lambda_data)
 
-        Plotting a precomputed Lambda result::
-
-            from deltakit_explorer.plotting.results import interpolate_lambda
-
-            lambda_result = interpolate_lambda(lambda_data)
-            fig, ax = plot(lambda_result)
-
         Plotting raw logical error probability per round data::
 
             fig, ax = plot(leppr_data)
-
-        Plotting a precomputed LEPPR fit curve::
-
-            from deltakit_explorer.plotting.results import interpolate_leppr
-
-            leppr_result = interpolate_leppr(leppr_data)
-            fig, ax = plot(leppr_result)
 
     """
     match result:
@@ -85,19 +62,14 @@ def plot(
                 result, num_sigmas=num_sigmas, num_points=num_points
             )
             return plot_lambda(lambda_result, fig=fig, ax=ax, title=title)
-        case LambdaResult():
-            return plot_lambda(result, fig=fig, ax=ax, title=title)
         case LEPPRData():
             leppr_result = interpolate_leppr(
                 result, num_sigmas=num_sigmas, num_points=num_points
             )
             return plot_leppr(leppr_result, fig=fig, ax=ax, title=title)
-        case LEPPRResult():
-            return plot_leppr(result, fig=fig, ax=ax, title=title)
         case _:
             msg = (
                 f"Unsupported result type: {type(result).__name__}. "
-                "Expected `LambdaData`, `LambdaResult`, "
-                "`LogicalErrorProbabilityPerRoundData`, or `LEPPRResult`."
+                "Expected `LambdaData` or `LogicalErrorProbabilityPerRoundData`."
             )
             raise TypeError(msg)

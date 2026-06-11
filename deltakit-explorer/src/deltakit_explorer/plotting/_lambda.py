@@ -36,6 +36,16 @@ def plot_lambda(
 
     Returns:
         The matplotlib Figure and Axes objects containing the plot.
+
+    Examples:
+
+        Plotting an interpolated Lambda result::
+
+            from deltakit_explorer.plotting import interpolate_lambda, plot_lambda
+
+            lambda_result = interpolate_lambda(lambda_data)
+            fig, ax = plot_lambda(lambda_result)
+
     """
     fig, ax = get_figure_and_axes(fig, ax)
     ax.plot(

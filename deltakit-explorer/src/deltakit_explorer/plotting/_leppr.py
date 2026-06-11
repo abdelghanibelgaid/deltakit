@@ -41,6 +41,16 @@ def plot_leppr(
 
     Returns:
         The matplotlib Figure and Axes objects containing the plot.
+
+    Examples:
+
+        Plotting an interpolated logical error probability per round result::
+
+            from deltakit_explorer.plotting import interpolate_leppr, plot_leppr
+
+            leppr_result = interpolate_leppr(leppr_data)
+            fig, ax = plot_leppr(leppr_result)
+
     """
     fig, ax = get_figure_and_axes(fig, ax)
     ax.plot(
@@ -62,6 +72,3 @@ def plot_leppr(
     ax.set_ylabel("Logical Error Probability")
     ax.legend()
     return fig, ax
-
-
-plot_logical_error_probability_per_round = plot_leppr
